@@ -1,0 +1,38 @@
+name: Compile and Release Typst PDFs
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger only when pushing a tag starting with 'v'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Typst
+        uses: typst-community/setup-typst@v4
+
+      - name: Compile Lectures
+        run: |
+          # Find all directories matching the lecture pattern
+          for dir in lectures-*; do
+            if [ -d "$dir" ] && [ -f "$dir/main.typ" ]; then
+              echo "Compiling $dir/main.typ..."
+              # Compiles main.typ to [directory-name].pdf
+              typst compile "$dir/main.typ" "${dir}.pdf"
+            fi
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # This automatically uses tag name (e.g., v1.0) as the release name
+          files: "*.pdf"
+          generate_release_notes: true 
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
